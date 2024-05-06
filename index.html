@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check User Commits</title>
+</head>
+<body>
+    <div id="result"></div>
+
+    <script>
+        async function checkUserCommits(username) {
+            const today = new Date().toISOString().slice(0, 10);
+            const url = `https://api.github.com/users/${username}/repos`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch repositories. Status: ${response.status}`);
+                }
+
+                const repos = await response.json();
+                for (const repo of repos) {
+                    const repoName = repo.name;
+                    if (await checkCommits(username, repoName, today)) {
+                        return true;
+                    }
+                }
+                return false;
+            } catch (error) {
+                console.error("Error:", error);
+                return null;
+            }
+        }
+
+        async function checkCommits(username, repoName, today) {
+            const url = `https://api.github.com/repos/${username}/${repoName}/commits`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch commits for ${repoName}. Status: ${response.status}`);
+                }
+
+                const commits = await response.json();
+                for (const commit of commits) {
+                    const commitDate = commit.commit.committer.date.slice(0, 10);
+                    if (commitDate === today) {
+                        return true;
+                    }
+                }
+                return false;
+            } catch (error) {
+                console.error("Error:", error);
+                return null;
+            }
+        }
+
+        const username = 'toperrrrrrrr';
+
+        checkUserCommits(username)
+            .then(hasCommits => {
+                const resultDiv = document.getElementById("result");
+                if (hasCommits) {
+                    resultDiv.textContent = "User has made a commit today.";
+                } else {
+                    resultDiv.textContent = "User has not made a commit today.";
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                const resultDiv = document.getElementById("result");
+                resultDiv.textContent = "An error occurred. Please check the console for details.";
+            });
+    </script>
+</body>
+</html>
